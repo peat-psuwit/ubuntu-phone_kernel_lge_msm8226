@@ -515,8 +515,20 @@ struct mount *__lookup_mnt(struct vfsmount *mnt, struct dentry *dentry,
 }
 
 /*
- * lookup_mnt increments the ref count before returning
- * the vfsmount struct.
+ * lookup_mnt - Return the first child mount mounted at path
+ *
+ * "First" means first mounted chronologically.  If you create the
+ * following mounts:
+ *
+ * mount /dev/sda1 /mnt
+ * mount /dev/sda2 /mnt
+ * mount /dev/sda3 /mnt
+ *
+ * Then lookup_mnt() on the base /mnt dentry in the root mount will
+ * return successively the root dentry and vfsmount of /dev/sda1, then
+ * /dev/sda2, then /dev/sda3, then NULL.
+ *
+ * lookup_mnt takes a reference to the found vfsmount.
  */
 struct vfsmount *lookup_mnt(struct path *path)
 {
@@ -938,7 +950,7 @@ EXPORT_SYMBOL(replace_mount_options);
 /* iterator; we want it to have access to namespace_sem, thus here... */
 static void *m_start(struct seq_file *m, loff_t *pos)
 {
-	struct proc_mounts *p = container_of(m, struct proc_mounts, m);
+	struct proc_mounts *p = proc_mounts(m);
 
 	down_read(&namespace_sem);
 	return seq_list_start(&p->ns->list, *pos);
@@ -946,7 +958,7 @@ static void *m_start(struct seq_file *m, loff_t *pos)
 
 static void *m_next(struct seq_file *m, void *v, loff_t *pos)
 {
-	struct proc_mounts *p = container_of(m, struct proc_mounts, m);
+	struct proc_mounts *p = proc_mounts(m);
 
 	return seq_list_next(v, &p->ns->list, pos);
 }
@@ -958,7 +970,7 @@ static void m_stop(struct seq_file *m, void *v)
 
 static int m_show(struct seq_file *m, void *v)
 {
-	struct proc_mounts *p = container_of(m, struct proc_mounts, m);
+	struct proc_mounts *p = proc_mounts(m);
 	struct mount *r = list_entry(v, struct mount, mnt_list);
 	return p->show(m, &r->mnt);
 }
@@ -2504,6 +2516,9 @@ SYSCALL_DEFINE2(pivot_root, const char __user *, new_root,
 		goto out4; /* not attached */
 	/* make sure we can reach put_old from new_root */
 	if (!is_path_reachable(real_mount(old.mnt), old.dentry, &new))
+		goto out4;
+	/* make certain new is below the root */
+	if (!is_path_reachable(new_mnt, new.dentry, &root))
 		goto out4;
 	br_write_lock(vfsmount_lock);
 	detach_mnt(new_mnt, &parent_path);

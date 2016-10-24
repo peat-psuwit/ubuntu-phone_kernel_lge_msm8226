@@ -1645,7 +1645,7 @@ static int hci_fm_set_cal_req_proc(struct radio_hci_dev *hdev,
 	opcode = hci_opcode_pack(HCI_OGF_FM_COMMON_CTRL_CMD_REQ,
 		HCI_OCF_FM_SET_CALIBRATION);
 	return radio_hci_send_cmd(hdev, opcode,
-		sizeof(hci_fm_set_cal_req_proc), cal_req);
+		sizeof(struct hci_fm_set_cal_req_proc), cal_req);
 }
 
 static int hci_fm_do_cal_req(struct radio_hci_dev *hdev,
@@ -3728,7 +3728,6 @@ static int iris_vidioc_s_ctrl(struct file *file, void *priv,
 		}
 		saved_val = radio->mute_mode.hard_mute;
 		radio->mute_mode.hard_mute = ctrl->value;
-		radio->mute_mode.soft_mute = IOC_SFT_MUTE;
 		retval = hci_set_fm_mute_mode(
 				&radio->mute_mode,
 				radio->fm_hdev);
