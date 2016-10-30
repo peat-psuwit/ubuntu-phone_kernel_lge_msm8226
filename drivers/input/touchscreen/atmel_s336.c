@@ -1681,7 +1681,7 @@ static void mxt_proc_t9_message(struct mxt_data *data, u8 *message)
 		if ((status & MXT_T9_PRESS || (status & MXT_T9_MOVE)) && data->ts_data.prev_data[id].status < MXT_STATE_PRESS) {
 			if (data->reported_keycode) {
 				TOUCH_INFO_MSG("KEY[%s:%d] is canceled\n", get_touch_button_string(data->reported_keycode), data->reported_keycode);
-				input_report_key(input_dev, data->reported_keycode, 0xFF);
+				input_report_key(input_dev, data->reported_keycode, 0);
 				data->reported_keycode = 0;
 				return ;
 			}
